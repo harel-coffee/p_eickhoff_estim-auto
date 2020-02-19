@@ -25,23 +25,29 @@ def loadCsv(filename):
     lines = csv.reader(open(filename, newline= '', encoding='utf-8-sig'), delimiter=',', quotechar='|')
     dataset = []
     for row in lines:
-        dataset.append([float(x) for x in row])
+        if row[12] != "": # checking if the last cell in each row (column 12) is not empty
+            dataset.append([float(x) for x in row])
     return dataset
 
 ### Construct data frame
-def data(filename='JFTO126.csv', scale=False):
+def data(filename, scale):
 
     #Load data from file
     dataset = np.array(loadCsv(filename))
-
+    
     n = len(dataset[0])
-    X = np.array(dataset[:, :n-1])
-    y = np.array(dataset[:, n-1])
+    for i in range(n):
+        if dataset[i][1] == 0 or dataset[i][1] == 9:
+            dataset = np.delete(dataset, i, 0) # deleting row
+    dataset = np.delete(dataset,0,1) # deleting column 0
+    dataset = np.delete(dataset,11,1) # deleting column 11
+    nn = len(dataset[0])
+    X = np.array(dataset[:, :nn-1])
+    y = np.array(dataset[:, nn-1])
 
     #Standardize and scale data
     if (scale):
         X = preprocessing.scale(X)
-
     return X, y
 
 ### Evaluate model
@@ -50,10 +56,9 @@ def evaluate(model_id, X, y, scale=False, seed=42):
 
     print("Fitting model parameters on training set")
     t0 = time.time()
-    grid = {'activation': ['logistic', 'tanh', 'relu'],
-    'learning_rate': ['constant', 'invscaling', 'adaptive'],
+    grid = {'activation': ['identity','logistic', 'tanh', 'relu'], 'learning_rate': ['constant', 'invscaling', 'adaptive'],
     'hidden_layer_sizes': [(10, ), (20, ), (30, ), (40, ), (50, ), (10, 10, ), (20, 10, )], }
-    clf = GridSearchCV(MLPRegressor(max_iter = 1000, random_state=seed), param_grid=grid, cv=5, iid=False, scoring='neg_mean_squared_error')
+    clf = GridSearchCV(MLPRegressor(max_iter = 1000, solver = 'lbfgs' , random_state=seed), param_grid=grid, cv=5, iid=False, scoring='neg_mean_squared_error')
     clf.fit(X_train, y_train)
     print("done in %0.3fs" % (time.time() - t0))
     print("\nBest estimator found by grid search:")
@@ -80,11 +85,19 @@ def evaluate(model_id, X, y, scale=False, seed=42):
                 plt.plot([X_test[i,0], X_test[i,0]], [y_pred[i], y_test[i]], color='black', linestyle='dashed', zorder=1)
                 plt.scatter(X_test[i,0], y_test[i], marker='o', color='blue', zorder=2)
                 plt.scatter(X_test[i,0], y_pred[i], marker='X', color='red', zorder=2)
-
         p.title.set_text('(phase width = '+str(widths[w])+')')
     plt.subplots_adjust(hspace=.8)
     plt.savefig("plots.png")
 
+files = ['JFTO126.csv', 'JFTO127.csv', 'JFTO128.csv', 'JFTO129.csv',  'JFTO131.csv', 'JFTO132.csv', 'JFTO144.csv', 'JFTO175.csv', 
+'JFTO176.csv', 'JFTO204.csv', 'JFTO205.csv']
+
+bad_files = ['JFTO130.csv', 'JFTO145.csv'] # format not compatible with the program
+
 # ### Methods to run:
-X, y = data()
-evaluate(id, X, y, True, 42)
+for i in files:
+    X, y = data(i, False)
+    print("Evaluating:" + i)
+    evaluate(id, X, y, True, 42)
+
+ # average through all files

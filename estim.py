@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import sklearn
 from sklearn import preprocessing
+import glob
 
 # Model Imports
 from sklearn.neural_network import MLPRegressor
@@ -19,6 +20,9 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split, GridSearchCV
 
 import matplotlib.pyplot as plt
+
+# Directory with CSV files
+data_dir = "data"
 
 ### Load data from csv file
 def loadCsv(filename):
@@ -95,9 +99,10 @@ files = ['JFTO126.csv', 'JFTO127.csv', 'JFTO128.csv', 'JFTO129.csv',  'JFTO131.c
 bad_files = ['JFTO130.csv', 'JFTO145.csv'] # format not compatible with the program
 
 # ### Methods to run:
-for i in files:
+
+for filepath in glob.iglob(data_dir + '/*.csv'):
     X, y = data(i, False)
     print("Evaluating:" + i)
     evaluate(id, X, y, True, 42)
-
+    
  # average through all files

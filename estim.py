@@ -93,16 +93,11 @@ def evaluate(model_id, X, y, scale=False, seed=42):
     plt.subplots_adjust(hspace=.8)
     plt.savefig("plots.png")
 
-files = ['JFTO126.csv', 'JFTO127.csv', 'JFTO128.csv', 'JFTO129.csv',  'JFTO131.csv', 'JFTO132.csv', 'JFTO144.csv', 'JFTO175.csv', 
-'JFTO176.csv', 'JFTO204.csv', 'JFTO205.csv']
-
-bad_files = ['JFTO130.csv', 'JFTO145.csv'] # format not compatible with the program
-
 # ### Methods to run:
 
 for filepath in glob.iglob(data_dir + '/*.csv'):
-    X, y = data(i, False)
-    print("Evaluating:" + i)
+    X, y = data(filepath, False)
+    print("Evaluating:" + filepath)
     evaluate(id, X, y, True, 42)
-    
+
  # average through all files

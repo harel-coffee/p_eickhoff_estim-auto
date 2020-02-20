@@ -44,7 +44,7 @@ def data(filename, scale):
         if dataset[i][1] == 0 or dataset[i][1] == 9:
             dataset = np.delete(dataset, i, 0) # deleting row
     dataset = np.delete(dataset,0,1) # deleting column 0
-    dataset = np.delete(dataset,11,1) # deleting column 11
+    dataset = np.delete(dataset,10,1) # deleting column 11
     nn = len(dataset[0])
     X = np.array(dataset[:, :nn-1])
     y = np.array(dataset[:, nn-1])

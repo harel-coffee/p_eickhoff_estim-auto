@@ -107,8 +107,7 @@ for test_file in glob.iglob(data_dir + '/*.csv'):
     train_y = None
     test_X, test_y = data(test_file, True)
     for filepath in glob.iglob(data_dir + '/*.csv'):
-        if filepath is not test_file:
-            
+        if filepath != test_file:
             file_X, file_y = data(filepath, True)
             if train_X is not None:
                 train_X = np.concatenate((train_X, file_X))

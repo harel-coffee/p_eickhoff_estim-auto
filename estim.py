@@ -49,6 +49,7 @@ def data(filename, scale):
     X = np.array(dataset[:, :nn-1])
     y = np.array(dataset[:, nn-1])
 
+
     #Standardize and scale data
     if (scale):
         X = preprocessing.scale(X)
@@ -70,6 +71,12 @@ def evaluate(model_id, X_train, y_train, X_test, y_test, seed=42):
     print("\nEvaluating best estimator on test set")
     t0 = time.time()
     y_pred = clf.predict(X_test)
+    for i, truth in enumerate(y_pred):
+        if truth > 1:
+            y_pred[i] = 1
+        if truth < 0:
+            y_pred[i] = 0
+
     print("done in %0.3fs" % (time.time() - t0))
 
     score = round(mean_absolute_error(y_test, y_pred), 4)

@@ -49,6 +49,12 @@ def data(filename, scale):
     X = np.array(dataset[:, :nn-1])
     y = np.array(dataset[:, nn-1])
 
+    # Cap ground truth within [0, 1]
+    for i, truth in enumerate(y):
+        if truth > 1:
+            y[i] = 1
+        if truth < 0:
+            y[i] = 0
 
     #Standardize and scale data
     if (scale):
@@ -71,12 +77,6 @@ def evaluate(model_id, X_train, y_train, X_test, y_test, seed=42):
     print("\nEvaluating best estimator on test set")
     t0 = time.time()
     y_pred = clf.predict(X_test)
-    for i, truth in enumerate(y_pred):
-        if truth > 1:
-            y_pred[i] = 1
-        if truth < 0:
-            y_pred[i] = 0
-
     print("done in %0.3fs" % (time.time() - t0))
 
     score = round(mean_absolute_error(y_test, y_pred), 4)
@@ -114,6 +114,7 @@ for test_file in glob.iglob(data_dir + '/*.csv'):
     test_X, test_y = data(test_file, True)
     for filepath in glob.iglob(data_dir + '/*.csv'):
         if filepath != test_file:
+            
             file_X, file_y = data(filepath, True)
             if train_X is not None:
                 train_X = np.concatenate((train_X, file_X))

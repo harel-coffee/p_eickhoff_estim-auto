@@ -14,9 +14,6 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from sklearn.feature_selection import chi2
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import ConstantKernel, RBF, RationalQuadratic, ExpSineSquared
-
 
 #Evaluation Imports
 from sklearn.metrics import mean_squared_error, mean_absolute_error
@@ -38,19 +35,23 @@ def loadCsv(filename):
 
 ### Construct data frame
 def data(filename, scale):
-
+    
     #Load data from file
     dataset = np.array(loadCsv(filename))
-    
-    n = len(dataset[0])
-    for i in range(n):
+    indices_control_or_other = []
+
+    # find rows that are Control (0) or Other (9)
+    for i in range(len(dataset)):
         if dataset[i][1] == 0 or dataset[i][1] == 9:
-            dataset = np.delete(dataset, i, 0) # deleting row
-    dataset = np.delete(dataset,0,1) # deleting column 0
-    dataset = np.delete(dataset,11,1) # deleting column 11
-    nn = len(dataset[0])
-    X = np.array(dataset[:, :nn-1])
-    y = np.array(dataset[:, nn-1])
+            indices_control_or_other.append(i)
+    
+    dataset = np.delete(dataset, indices_control_or_other, 0) # delete rows that are Control/Other
+    dataset = np.delete(dataset,[0, 11], 1) # deleting columns 0 and 11
+
+    row_len = len(dataset[0])
+    X = np.array(dataset[:, :row_len-1])
+    y = np.array(dataset[:, row_len-1])
+
 
     #Standardize and scale data
     if (scale):
@@ -62,21 +63,24 @@ def evaluate(model_id, X_train, y_train, X_test, y_test, seed=42):
 
     print("Fitting model parameters on training set")
     t0 = time.time()
-
-    model = GaussianProcessRegressor()
-    
-    model.fit(X_train, y_train)
+    grid = {'activation': ['identity','logistic', 'tanh', 'relu'], 'learning_rate': ['constant', 'invscaling', 'adaptive'],
+    'hidden_layer_sizes': [(10, ), (20, ), (30, ), (40, ), (50, ), (10, 10, ), (20, 10, )], }
+    clf = GridSearchCV(MLPRegressor(max_iter = 1000, solver = 'lbfgs' , random_state=seed), param_grid=grid, cv=5, iid=False, scoring='neg_mean_squared_error')
+    clf.fit(X_train, y_train)
     print("done in %0.3fs" % (time.time() - t0))
+    print("\nBest estimator found by grid search:")
+    print('\t'+str(clf.best_estimator_))
 
-    print("\nEvaluating model on test set")
+    print("\nEvaluating best estimator on test set")
     t0 = time.time()
-    y_pred = model.predict(X_test)
+    y_pred = clf.predict(X_test)
+
     print("done in %0.3fs" % (time.time() - t0))
 
     score = round(mean_absolute_error(y_test, y_pred), 4)
     print('\n\t\tMAE (test):', score)
 
-    scores.append(score)
+    scores.append(scores)
 
     #Plot predicted vs. true twitch force per phase width
     widths = np.unique(X_test[:,1])
@@ -120,5 +124,7 @@ for test_file in glob.iglob(data_dir + '/*.csv'):
 
 for test_file, score in zip(test_files, scores):
     print(f"MAE {score} for held-out test subject {test_file}")
+
+
 
  # average through all files

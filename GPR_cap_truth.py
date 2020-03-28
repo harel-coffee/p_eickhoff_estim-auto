@@ -41,17 +41,25 @@ def data(filename, scale):
 
     #Load data from file
     dataset = np.array(loadCsv(filename))
-    
-    n = len(dataset[0])
-    for i in range(n):
-        if dataset[i][1] == 0 or dataset[i][1] == 9:
-            dataset = np.delete(dataset, i, 0) # deleting row
-    dataset = np.delete(dataset,0,1) # deleting column 0
-    dataset = np.delete(dataset,11,1) # deleting column 11
-    nn = len(dataset[0])
-    X = np.array(dataset[:, :nn-1])
-    y = np.array(dataset[:, nn-1])
+    indices_control_or_other = []
 
+    # find rows that are Control (0) or Other (9)
+    for i in range(len(dataset)):
+        if dataset[i][1] == 0 or dataset[i][1] == 9:
+            indices_control_or_other.append(i)
+    
+    dataset = np.delete(dataset, indices_control_or_other, 0) # delete rows that are Control/Other
+    dataset = np.delete(dataset,[0, 11], 1) # deleting columns 0 and 11
+
+    row_len = len(dataset[0])
+    X = np.array(dataset[:, :row_len-1])
+    y = np.array(dataset[:, row_len-1])
+    # Cap ground truth within [0, 1]
+    for i, truth in enumerate(y):
+        if truth > 1:
+            y[i] = 1
+        if truth < 0:
+            y[i] = 0
     #Standardize and scale data
     if (scale):
         X = preprocessing.scale(X)
@@ -72,6 +80,10 @@ def evaluate(model_id, X_train, y_train, X_test, y_test, seed=42):
     t0 = time.time()
     y_pred = model.predict(X_test)
     print("done in %0.3fs" % (time.time() - t0))
+
+    print(y_test)
+
+    print(y_pred)
 
     score = round(mean_absolute_error(y_test, y_pred), 4)
     print('\n\t\tMAE (test):', score)

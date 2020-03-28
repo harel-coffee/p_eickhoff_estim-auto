@@ -52,15 +52,15 @@ def data(filename, scale):
     X = np.array(dataset[:, :row_len-1])
     y = np.array(dataset[:, row_len-1])
 
-
     #Standardize and scale data
     if (scale):
         X = preprocessing.scale(X)
     return X, y
 
 ### Evaluate model
-def evaluate(model_id, X_train, y_train, X_test, y_test, seed=42):
-
+def evaluate(model_id, X, y, scale, seed=42):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)
+    
     print("Fitting model parameters on training set")
     t0 = time.time()
     grid = {'activation': ['identity','logistic', 'tanh', 'relu'], 'learning_rate': ['constant', 'invscaling', 'adaptive'],
@@ -74,13 +74,11 @@ def evaluate(model_id, X_train, y_train, X_test, y_test, seed=42):
     print("\nEvaluating best estimator on test set")
     t0 = time.time()
     y_pred = clf.predict(X_test)
-
     print("done in %0.3fs" % (time.time() - t0))
 
     score = round(mean_absolute_error(y_test, y_pred), 4)
     print('\n\t\tMAE (test):', score)
 
-    scores.append(scores)
 
     #Plot predicted vs. true twitch force per phase width
     widths = np.unique(X_test[:,1])
@@ -100,31 +98,8 @@ def evaluate(model_id, X_train, y_train, X_test, y_test, seed=42):
     plt.savefig("plots.png")
 
 # ### Methods to run:
+for filepath in glob.iglob(data_dir + '/*.csv'):
+    X, y = data(filepath, True)
+    print("Evaluating:" + filepath)
+    evaluate(id, X, y, True, 42)
 
-scores = []
-test_files = [] #corresponding order with scores
-
-for test_file in glob.iglob(data_dir + '/*.csv'):
-    test_files.append(test_file)
-    print(f"Starting training with held-out test file: {test_file}")
-    train_X = None
-    train_y = None
-    test_X, test_y = data(test_file, True)
-    for filepath in glob.iglob(data_dir + '/*.csv'):
-        if filepath != test_file:
-            file_X, file_y = data(filepath, True)
-            if train_X is not None:
-                train_X = np.concatenate((train_X, file_X))
-                train_y = np.concatenate((train_y, file_y))
-            else:
-                train_X = file_X
-                train_y = file_y
-            print(f"Added {filepath} to training set")
-    evaluate(id, train_X, train_y, test_X, test_y, 42)
-
-for test_file, score in zip(test_files, scores):
-    print(f"MAE {score} for held-out test subject {test_file}")
-
-
-
- # average through all files

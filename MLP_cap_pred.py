@@ -51,12 +51,7 @@ def data(filename, scale):
     row_len = len(dataset[0])
     X = np.array(dataset[:, :row_len-1])
     y = np.array(dataset[:, row_len-1])
-    # Cap ground truth within [0, 1]
-    for i, truth in enumerate(y):
-        if truth > 1:
-            y[i] = 1
-        if truth < 0:
-            y[i] = 0
+
     #Standardize and scale data
     if (scale):
         X = preprocessing.scale(X)
@@ -79,6 +74,12 @@ def evaluate(model_id, X_train, y_train, X_test, y_test, seed=42):
     print("\nEvaluating best estimator on test set")
     t0 = time.time()
     y_pred = clf.predict(X_test)
+    # cap predictions within [0, 1]
+    for i, pred in enumerate(y_pred):
+        if pred > 1:
+            y_pred[i] = 1
+        if pred < 0:
+            y_pred[i] = 0
     print("done in %0.3fs" % (time.time() - t0))
 
     score = round(mean_absolute_error(y_test, y_pred), 4)

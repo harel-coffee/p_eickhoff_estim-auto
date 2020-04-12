@@ -43,11 +43,11 @@ def data(filename, scale):
             indices_control_or_other.append(i)
     
     dataset = np.delete(dataset, indices_control_or_other, 0) # delete rows that are Control/Other
-    dataset = np.delete(dataset,[0, 11], 1) # deleting columns 0 and 11
 
     row_len = len(dataset[0])
     X = np.array(dataset[:, :row_len-1])
     unprocessed_X = X
+    X = np.delete(X,[0, 11], 1) # deleting columns 0 and 11
     y = np.array(dataset[:, row_len-1])
     # Cap ground truth within [0, 1]
     for i, truth in enumerate(y):
@@ -59,6 +59,7 @@ def data(filename, scale):
     if (scale):
         X = preprocessing.scale(X)
     return X, y, unprocessed_X
+
 
 ### Evaluate model
 def evaluate(model_id, X_train, y_train, X_test, y_test, seed=42):
@@ -97,7 +98,7 @@ def to_num(label):
     # remove all non-numeric characters
     label_str = ""
     for char in label:
-        if char.digit():
+        if char.isdigit():
             label_str += char
     return label_str
 
@@ -119,6 +120,6 @@ for filepath in glob.iglob(data_dir + '/*.csv'):
 
     # Save data for Steffen's plots
     data_for_plot = np.concatenate((X_test_unprocessed, y_test.reshape(-1, 1), y_pred.reshape(-1, 1)), axis=1)
-    np.savetxt(f"MLP_intra_{to_num(filepath)}.csv", data_for_plot, delimiter=",")
+    np.savetxt(f"MLP_intra_{to_num(filepath)}.csv", data_for_plot, delimiter=",", fmt="f")
 
 

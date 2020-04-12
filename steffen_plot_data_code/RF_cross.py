@@ -25,7 +25,7 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 import matplotlib.pyplot as plt
 
 # Directory with CSV files
-data_dir = "data"
+data_dir = "../data"
 test_data_dir = "representative_data"
 
 ### Load data from csv file
@@ -37,10 +37,9 @@ def loadCsv(filename):
             dataset.append([float(x) for x in row])
     return dataset
 
-### Construct data frame
 def data(filename, scale):
 
-   #Load data from file
+    #Load data from file
     dataset = np.array(loadCsv(filename))
     indices_control_or_other = []
 
@@ -50,13 +49,18 @@ def data(filename, scale):
             indices_control_or_other.append(i)
     
     dataset = np.delete(dataset, indices_control_or_other, 0) # delete rows that are Control/Other
-    dataset = np.delete(dataset,[0, 11], 1) # deleting columns 0 and 11
 
     row_len = len(dataset[0])
     X = np.array(dataset[:, :row_len-1])
     unprocessed_X = X
+    X = np.delete(X,[0, 11], 1) # deleting columns 0 and 11
     y = np.array(dataset[:, row_len-1])
-
+    # Cap ground truth within [0, 1]
+    for i, truth in enumerate(y):
+        if truth > 1:
+            y[i] = 1
+        if truth < 0:
+            y[i] = 0
     #Standardize and scale data
     if (scale):
         X = preprocessing.scale(X)
@@ -118,7 +122,7 @@ def to_num(label):
     # remove all non-numeric characters
     label_str = ""
     for char in label:
-        if char.digit():
+        if char.isdigit():
             label_str += char
     return label_str
 
@@ -146,7 +150,7 @@ for test_file in glob.iglob(test_data_dir + '/*.csv'):
 
     # Save data for Steffen's plots
     data_for_plot = np.concatenate((X_test_unprocessed, y_test.reshape(-1, 1), y_pred.reshape(-1, 1)), axis=1)
-    np.savetxt(f"RF_cross_{to_num(test_file)}.csv", data_for_plot, delimiter=",")
+    np.savetxt(f"RF_cross_{to_num(test_file)}.csv", data_for_plot, delimiter=",", fmt="f")
 
 
 

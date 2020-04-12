@@ -117,7 +117,6 @@ scores = []
 test_files = [] #corresponding order with scores
 
 for test_file in glob.iglob(data_dir + '/*.csv'):
-    test_files.append(to_alnum(test_file))
     print(f"Starting training with held-out test file: {test_file}")
     X_train = None
     y_train = None
@@ -136,7 +135,7 @@ for test_file in glob.iglob(data_dir + '/*.csv'):
 
     # Save data for Steffen's plots
     data_for_plot = np.concatenate((X_test_unprocessed, y_test.reshape(-1, 1), y_pred.reshape(-1, 1)), axis=1)
-    np.savetxt(f"RF_cross{test_file}.csv", data_for_plot, delimiter=",")
+    np.savetxt(f"RF_cross{to_alnum(test_file)}.csv", data_for_plot, delimiter=",")
 
 
 

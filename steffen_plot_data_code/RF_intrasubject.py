@@ -91,6 +91,16 @@ def to_alnum(label):
             label_str += char
     return label_str
 
+
+def to_num(label):
+    # remove all non-numeric characters
+    label_str = ""
+    for char in label:
+        if char.digit():
+            label_str += char
+    return label_str
+
+
 # ### Methods to run:
 for filepath in glob.iglob(data_dir + '/*.csv'):
     X, y, unprocessed_X = data(filepath, True)
@@ -108,6 +118,6 @@ for filepath in glob.iglob(data_dir + '/*.csv'):
 
     # Save data for Steffen's plots
     data_for_plot = np.concatenate((X_test_unprocessed, y_test.reshape(-1, 1), y_pred.reshape(-1, 1)), axis=1)
-    np.savetxt(f"RF_intra{to_alnum(filepath)}.csv", data_for_plot, delimiter=",")
+    np.savetxt(f"RF_intra_{to_num(filepath)}.csv", data_for_plot, delimiter=",")
 
 

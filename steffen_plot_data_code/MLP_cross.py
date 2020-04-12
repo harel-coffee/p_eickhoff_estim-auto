@@ -22,7 +22,8 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 import matplotlib.pyplot as plt
 
 # Directory with CSV files
-data_dir = "representative_data"
+data_dir = "data"
+test_data_dir = "representative_data"
 
 ### Load data from csv file
 def loadCsv(filename):
@@ -101,27 +102,35 @@ def to_alnum(label):
             label_str += char
     return label_str
 
+def to_num(label):
+    # remove all non-numeric characters
+    label_str = ""
+    for char in label:
+        if char.digit():
+            label_str += char
+    return label_str
 
-for test_file in glob.iglob(data_dir + '/*.csv'):
+
+for test_file in glob.iglob(test_data_dir + '/*.csv'):
     print(f"Starting training with held-out test file: {test_file}")
-    train_X = None
-    train_y = None
+    X_train = None
+    y_train = None
     X_test, y_test, X_test_unprocessed = data(test_file, True)
     for filepath in glob.iglob(data_dir + '/*.csv'):
-        if filepath != test_file:
+        if to_num(filepath) != to_num(test_file):
             file_X, file_y, _ = data(filepath, True)
-            if train_X is not None:
-                train_X = np.concatenate((train_X, file_X))
-                train_y = np.concatenate((train_y, file_y))
+            if X_train is not None:
+                X_train = np.concatenate((X_train, file_X))
+                y_train = np.concatenate((y_train, file_y))
             else:
-                train_X = file_X
-                train_y = file_y
+                X_train = file_X
+                y_train = file_y
             print(f"Added {filepath} to training set")
-    y_pred = evaluate(id, train_X, train_y, X_test, y_test, 42)
+    y_pred = evaluate(id, X_train, y_train, X_test, y_test, 42)
 
     # Save data for Steffen's plots
     data_for_plot = np.concatenate((X_test_unprocessed, y_test.reshape(-1, 1), y_pred.reshape(-1, 1)), axis=1)
-    np.savetxt(f"MLP_cross{to_alnum(test_file)}.csv", data_for_plot, delimiter=",")
+    np.savetxt(f"MLP_cross_{to_num(test_file)}.csv", data_for_plot, delimiter=",")
 
 for test_file, score in zip(test_file_names, scores):
     print(f"MAE {score} for held-out test subject {test_file}")

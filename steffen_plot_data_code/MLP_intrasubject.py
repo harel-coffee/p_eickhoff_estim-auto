@@ -63,6 +63,7 @@ def data(filename, scale):
 
 ### Evaluate model
 def evaluate(model_id, X_train, y_train, X_test, y_test, seed=42):
+    print(X_train.shape, y_train.shape)
     
     print("Fitting model parameters on training set")
     t0 = time.time()
@@ -107,9 +108,9 @@ def to_num(label):
 for filepath in glob.iglob(data_dir + '/*.csv'):
     X, y, unprocessed_X = data(filepath, True)
     np.random.seed(42)
-    test_indices = np.random.choice(len(X), len(X)/0.2)
-    X_train = np.delete(X, test_indices)
-    y_train = np.delete(y, test_indices)
+    test_indices = np.random.choice(len(X), int(len(X)/0.2))
+    X_train = np.delete(X, test_indices, 0)
+    y_train = np.delete(y, test_indices, 0)
     X_test = X[test_indices]
     y_test = y[test_indices]
 

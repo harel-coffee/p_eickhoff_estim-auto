@@ -107,7 +107,7 @@ for test_file in glob.iglob(data_dir + '/*.csv'):
     print(f"Starting training with held-out test file: {test_file}")
     train_X = None
     train_y = None
-    test_X, test_y, test_X_unprocessed = data(test_file, True)
+    X_test, y_test, X_test_unprocessed = data(test_file, True)
     for filepath in glob.iglob(data_dir + '/*.csv'):
         if filepath != test_file:
             file_X, file_y, _ = data(filepath, True)
@@ -118,10 +118,10 @@ for test_file in glob.iglob(data_dir + '/*.csv'):
                 train_X = file_X
                 train_y = file_y
             print(f"Added {filepath} to training set")
-    y_pred = evaluate(id, train_X, train_y, test_X, test_y, 42)
+    y_pred = evaluate(id, train_X, train_y, X_test, y_test, 42)
 
     # Save data for Steffen's plots
-    data_for_plot = np.concatenate((test_X_unprocessed, test_y.reshape(-1, 1), y_pred.reshape(-1, 1)), axis=1)
+    data_for_plot = np.concatenate((X_test_unprocessed, y_test.reshape(-1, 1), y_pred.reshape(-1, 1)), axis=1)
     np.savetxt(f"MLP_cross{test_file}.csv", data_for_plot, delimiter=",")
 
 for test_file, score in zip(test_file_names, scores):

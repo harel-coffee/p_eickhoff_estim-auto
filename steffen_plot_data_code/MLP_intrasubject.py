@@ -102,13 +102,13 @@ for filepath in glob.iglob(data_dir + '/*.csv'):
     X_test = X[test_indices]
     y_test = y[test_indices]
 
-    test_X_unprocessed = unprocessed_X[test_indices]
+    X_test_unprocessed = unprocessed_X[test_indices]
 
     print("Evaluating:" + filepath)
     y_pred = evaluate(id, X_train, y_train, X_test, y_test, 42)
 
     # Save data for Steffen's plots
-    data_for_plot = np.concatenate((test_X_unprocessed, y_test.reshape(-1, 1), y_pred.reshape(-1, 1)), axis=1)
+    data_for_plot = np.concatenate((X_test_unprocessed, y_test.reshape(-1, 1), y_pred.reshape(-1, 1)), axis=1)
     np.savetxt(f"MLP_intra{to_alnum(filepath)}.csv", data_for_plot, delimiter=",")
 
 

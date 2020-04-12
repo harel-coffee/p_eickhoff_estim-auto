@@ -14,9 +14,6 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from sklearn.feature_selection import chi2
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import ConstantKernel, RBF, RationalQuadratic, ExpSineSquared
-
 
 #Evaluation Imports
 from sklearn.metrics import mean_squared_error, mean_absolute_error
@@ -25,7 +22,7 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 import matplotlib.pyplot as plt
 
 # Directory with CSV files
-data_dir = "data"
+data_dir = "representative_data"
 
 ### Load data from csv file
 def loadCsv(filename):
@@ -39,7 +36,7 @@ def loadCsv(filename):
 ### Construct data frame
 def data(filename, scale):
 
-   #Load data from file
+    #Load data from file
     dataset = np.array(loadCsv(filename))
     indices_control_or_other = []
 
@@ -53,86 +50,83 @@ def data(filename, scale):
 
     row_len = len(dataset[0])
     X = np.array(dataset[:, :row_len-1])
+    unprocessed_X = X
     y = np.array(dataset[:, row_len-1])
-
+    # Cap ground truth within [0, 1]
+    for i, truth in enumerate(y):
+        if truth > 1:
+            y[i] = 1
+        if truth < 0:
+            y[i] = 0
     #Standardize and scale data
     if (scale):
         X = preprocessing.scale(X)
-    return X, y
+    return X, y, unprocessed_X
+
 
 ### Evaluate model
 def evaluate(model_id, X_train, y_train, X_test, y_test, seed=42):
-
+    # return y_pred for plotting purposes
     print("Fitting model parameters on training set")
     t0 = time.time()
-
-    model = GaussianProcessRegressor()
-    
-    model.fit(X_train, y_train)
+    grid = {'activation': ['identity','logistic', 'tanh', 'relu'], 'learning_rate': ['constant', 'invscaling', 'adaptive'],
+    'hidden_layer_sizes': [(10, ), (20, ), (30, ), (40, ), (50, ), (10, 10, ), (20, 10, )], }
+    clf = GridSearchCV(MLPRegressor(max_iter = 1000, solver = 'lbfgs' , random_state=seed), param_grid=grid, cv=5, iid=False, scoring='neg_mean_squared_error')
+    clf.fit(X_train, y_train)
     print("done in %0.3fs" % (time.time() - t0))
+    print("\nBest estimator found by grid search:")
+    print('\t'+str(clf.best_estimator_))
 
-    print("\nEvaluating model on test set")
+    print("\nEvaluating best estimator on test set")
     t0 = time.time()
-    y_pred = model.predict(X_test)
-    # cap predictions within [0, 1]
-    for i, pred in enumerate(y_pred):
-        if pred > 1:
-            y_pred[i] = 1
-        if pred < 0:
-            y_pred[i] = 0
+    y_pred = clf.predict(X_test)
     print("done in %0.3fs" % (time.time() - t0))
 
     score = round(mean_absolute_error(y_test, y_pred), 4)
     print('\n\t\tMAE (test):', score)
 
-    scores.append(score)
+    scores.append(scores)
 
     return y_pred
+# ### Methods to run:
 
-def plot(X_test, y_test, y_pred, label):
-#Plot predicted vs. true twitch force
-    first_phase_amp = np.abs(X_test[:,4])
-    second_phase_amp = np.abs(X_test[:,7])
-    amplitudes = first_phase_amp + second_phase_amp
-    plt.figure(figsize=(10, 15))
-    plt.suptitle('Amplitude vs. Twitch Force (blue = true, red = predicted)')
-    axes = plt.gca()
-    axes.set_ylim(0, 1.1)
-    plt.plot(amplitudes, y_test, 'bo')
-    plt.plot(amplitudes, y_pred, 'r+')
+scores = []
+test_file_names = [] #corresponding order with scores
 
+def to_alnum(label):
+    # remove all non-alphanumeric characters
     label_str = ""
     for char in label:
         if char.isalnum():
             label_str += char
+    return label_str
 
-    plt.savefig(f"plot_{label_str}.png")
-
-
-scores = []
-test_files = [] #corresponding order with scores
 
 for test_file in glob.iglob(data_dir + '/*.csv'):
-    test_files.append(test_file)
+    test_file_names.append(to_alnum(test_file))
     print(f"Starting training with held-out test file: {test_file}")
-    X_train = None
-    y_train = None
-    X_test, y_test = data(test_file, True)
+    train_X = None
+    train_y = None
+    test_X, test_y, test_X_unprocessed = data(test_file, True)
     for filepath in glob.iglob(data_dir + '/*.csv'):
         if filepath != test_file:
-            file_X, file_y = data(filepath, True)
-            if X_train is not None:
-                X_train = np.concatenate((X_train, file_X))
-                y_train = np.concatenate((y_train, file_y))
+            file_X, file_y, _ = data(filepath, True)
+            if train_X is not None:
+                train_X = np.concatenate((train_X, file_X))
+                train_y = np.concatenate((train_y, file_y))
             else:
-                X_train = file_X
-                y_train = file_y
+                train_X = file_X
+                train_y = file_y
             print(f"Added {filepath} to training set")
-    y_pred = evaluate(id, X_train, y_train, X_test, y_test, 42)
-    plot(X_test, y_test, y_pred, test_file)
+    y_pred = evaluate(id, train_X, train_y, test_X, test_y, 42)
 
+    # Save data for Steffen's plots
+    data_for_plot = np.concatenate((test_X_unprocessed, test_y.reshape(-1, 1), y_pred.reshape(-1, 1)), axis=1)
+    np.savetxt(f"MLP_cross{test_file}.csv", data_for_plot, delimiter=",")
 
-for test_file, score in zip(test_files, scores):
+for test_file, score in zip(test_file_names, scores):
     print(f"MAE {score} for held-out test subject {test_file}")
+
+
 
  # average through all files

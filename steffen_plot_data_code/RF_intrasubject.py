@@ -118,6 +118,6 @@ for filepath in glob.iglob(data_dir + '/*.csv'):
 
     # Save data for Steffen's plots
     data_for_plot = np.concatenate((X_test_unprocessed, y_test.reshape(-1, 1), y_pred.reshape(-1, 1)), axis=1)
-    np.savetxt(f"RF_intra_{to_num(filepath)}.csv", data_for_plot, delimiter=",", fmt="f")
+    np.savetxt(f"RF_intra_{to_num(filepath)}.csv", data_for_plot, delimiter=",", fmt="%10.5f")
 
 

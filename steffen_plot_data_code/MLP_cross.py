@@ -130,7 +130,7 @@ for test_file in glob.iglob(test_data_dir + '/*.csv'):
 
     # Save data for Steffen's plots
     data_for_plot = np.concatenate((X_test_unprocessed, y_test.reshape(-1, 1), y_pred.reshape(-1, 1)), axis=1)
-    np.savetxt(f"MLP_cross_{to_num(test_file)}.csv", data_for_plot, delimiter=",", fmt="f")
+    np.savetxt(f"MLP_cross_{to_num(test_file)}.csv", data_for_plot, delimiter=",", fmt="%10.5f")
 
 for test_file, score in zip(test_file_names, scores):
     print(f"MAE {score} for held-out test subject {test_file}")

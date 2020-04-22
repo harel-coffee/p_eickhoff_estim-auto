@@ -105,7 +105,7 @@ def to_num(label):
 for filepath in glob.iglob(data_dir + '/*.csv'):
     X, y, unprocessed_X = data(filepath, True)
     np.random.seed(42)
-    test_indices = np.random.choice(len(X), int(len(X)/0.2))
+    test_indices = np.random.choice(len(X), int(len(X)*0.2), replace=False)
     X_train = np.delete(X, test_indices, 0)
     y_train = np.delete(y, test_indices, 0)
     X_test = X[test_indices]

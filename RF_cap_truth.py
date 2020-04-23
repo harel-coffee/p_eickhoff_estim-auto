@@ -55,6 +55,13 @@ def data(filename, scale):
     X = np.array(dataset[:, :row_len-1])
     y = np.array(dataset[:, row_len-1])
 
+    # Cap ground truth within [0, 1]
+    for i, truth in enumerate(y):
+        if truth > 1:
+            y[i] = 1
+        if truth < 0:
+            y[i] = 0
+
     #Standardize and scale data
     if (scale):
         X = preprocessing.scale(X)

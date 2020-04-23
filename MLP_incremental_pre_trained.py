@@ -96,12 +96,13 @@ def evaluate(model_id, X_train, y_train, X_test, y_test, X, y, seed=42):
 		'hidden_layer_sizes': [(10, ), (20, ), (30, ), (40, ), (50, ), (10, 10, ), (20, 10, )], }
 		new_clf = clf.best_estimator_
 		#clf = GridSearchCV(MLPRegressor(max_iter = 1000, solver = 'lbfgs' , random_state=seed), param_grid=grid, cv=5, iid=False, scoring='neg_mean_squared_error')
-		new_clf.partial_fit(X_train[i], y_train[i])
+		for j in range(1000):
+			new_clf.partial_fit(X_train[i], y_train[i])
 		print("done in %0.3fs" % (time.time() - t0))
 
 		print("\nEvaluating best estimator on test set")
 		t0 = time.time()
-		y_pred = clf.predict(X_test)
+		y_pred = new_clf.predict(X_test)
 		print("done in %0.3fs" % (time.time() - t0))
 
 		score = round(mean_absolute_error(y_test, y_pred), 4)

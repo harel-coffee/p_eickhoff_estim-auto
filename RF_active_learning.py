@@ -105,7 +105,7 @@ def evaluate(model_id, X, y, scale=False, seed=42):
         #clf = GridSearchCV(estimator = RandomForestRegressor(max_features = "auto", criterion = "mse", random_state = 42), param_grid=grid, cv=5, iid=False, scoring='neg_mean_squared_error')
         n_initial = 10
         clf = ActiveLearner(estimator= RandomForestRegressor(max_features = "auto", criterion = "mse", random_state = 42), query_strategy=uncertainty_sampling, X_training = X_train[i], y_training=y_train[i])
-        clf.teach(X,y)
+        clf.teach(X_train[i],y_train[i])
         #clf.fit(X_train[i], y_train[i])
         #print("done in %0.3fs" % (time.time() - t0))
         #print("\nBest estimator found by grid search:")
@@ -146,6 +146,6 @@ for filepath in glob.iglob(data_dir + '/*.csv'):
     X, y = data(filepath, True)
     print("Evaluating:" + filepath)
     for iteration in range(0, 20):
-    	print("Iteration:", iteration)
+    	# print("Iteration:", iteration)
     	evaluate(id, X, y, True, 42)    
  # average through all files

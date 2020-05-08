@@ -83,7 +83,9 @@ def evaluate(model_id, X, y, scale=False, seed=42):
     index_200 = np.random.randint(0,index_cap,200)
     index_1000 = np.random.randint(0,index_cap,1000)
     index_2000 = np.random.randint(0,index_cap,2000)
+    # index_5000 = np.random.randint(0,index_cap,5000)
     
+    #all_index = [index_10,index_20,index_50,index_100,index_200,index_1000, index_2000, index_5000]
     all_index = [index_10,index_20,index_50,index_100,index_200,index_1000, index_2000]
     interation_scores = []
         
@@ -97,12 +99,12 @@ def evaluate(model_id, X, y, scale=False, seed=42):
         clf = ActiveLearner(estimator = MLPRegressor(max_iter = 1000, solver='adam', random_state=seed),  query_strategy=uncertainty_sampling, X_training = X_train[i], y_training=y_train[i])
         clf.teach(X_train[i], y_train[i])
         #clf.fit(X_train[i], y_train[i])
-        print("done in %0.3fs" % (time.time() - t0))
+        #print("done in %0.3fs" % (time.time() - t0))
         #print("\nBest estimator found by grid search:")
         #print('\t'+str(clf.best_estimator_))
     
         #print("\nEvaluating best estimator on test set")
-        t0 = time.time()
+        # t0 = time.time()
         y_pred = clf.predict(X_test)
         #print("done in %0.3fs" % (time.time() - t0))
     

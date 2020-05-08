@@ -93,8 +93,10 @@ def evaluate(model_id, X, y, scale=False, seed=42):
     index_50 = np.random.randint(0,index_cap,50)
     index_100 = np.random.randint(0,index_cap,100)
     index_200 = np.random.randint(0,index_cap,200)
+    index_1000 = np.random.randint(0,index_cap,1000)
+    index_2000 = np.random.randint(0,index_cap,2000)
     
-    all_index = [index_10,index_20,index_50,index_100,index_200]
+    all_index = [index_10,index_20,index_50,index_100,index_200,index_1000,index_2000]
     interation_scores = []
         
     for i in all_index:

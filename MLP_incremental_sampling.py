@@ -64,23 +64,50 @@ def data(filename, scale):
 
 ### Evaluate model
 def evaluate(model_id, X, y, scale, seed=42):
+    all_index = []
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)
     
     index_cap = len(y_train)
-    index_10 = np.random.randint(0,index_cap,10)
-    index_20 = np.random.randint(0,index_cap,20)
-    index_50 = np.random.randint(0,index_cap,50)
-    index_100 = np.random.randint(0,index_cap,100)
-    index_200 = np.random.randint(0,index_cap,200)
+    index_10 = random.sample(range(index_cap),10)
+    all_index.append(index_10)
+    index_20 = random.sample(range(index_cap),20)
+    all_index.append(index_20)
+    index_50 = random.sample(range(index_cap),50)
+    all_index.append(index_50)
+    index_100 = random.sample(range(index_cap),100)
+    all_index.append(index_100)
+    index_200 = random.sample(range(index_cap),200)
+    all_index.append(index_200)
 
-    all_index = [index_10,index_20,index_50,index_100,index_200]
+    for i in range(1):
+        if (index_cap) > 500:
+            index_500 = random.sample(range(index_cap),500)
+            all_index.append(index_500)
+        else:
+            index_500 = random.sample(range(index_cap),index_cap)
+            all_index.append(index_500)
+            break
+        if (index_cap) > 1000:
+            index_1000 = random.sample(range(index_cap),1000)
+        else:
+            index_1000 = random.sample(range(index_cap),index_cap)
+            all_index.append(index_1000)
+            break
+        if (index_cap) > 2000:
+            index_2000 = random.sample(range(index_cap),2000)
+        else:
+            index_2000 = random.sample(range(index_cap),index_cap)
+            all_index.append(index_2000)
+            break
+
+    
     for i in all_index:
     	length = len(i)
     	print("Fitting model parameters on training set using", length, "rows of training set")
     	t0 = time.time()
     	grid = {'activation': ['identity','logistic', 'tanh', 'relu'], 'learning_rate': ['constant', 'invscaling', 'adaptive'],
     	'hidden_layer_sizes': [(10, ), (20, ), (30, ), (40, ), (50, ), (10, 10, ), (20, 10, )], }
-    	clf = GridSearchCV(MLPRegressor(max_iter = 1000, solver = 'lbfgs' , random_state=seed), param_grid=grid, cv=5, iid=False, scoring='neg_mean_squared_error')
+    	clf = GridSearchCV(MLPRegressor(max_iter = 1000, solver = 'adam' , random_state=seed), param_grid=grid, cv=5, iid=False, scoring='neg_mean_squared_error')
     	clf.fit(X_train[i], y_train[i])
     	print("done in %0.3fs" % (time.time() - t0))
     	print("\nBest estimator found by grid search:")

@@ -8,6 +8,7 @@ import pandas as pd
 import sklearn
 from sklearn import preprocessing
 import glob
+from datetime import datetime
 
 # Model Imports
 from sklearn.neural_network import MLPRegressor
@@ -73,7 +74,7 @@ def evaluate(model_id, X_non_subject, y_non_subject, X_subject, y_subject, seed=
 	print("Fitting model parameters on non-subject data")
 	t0 = time.time()
 	grid = {'n_estimators': (10, 50, 100, 1000),'min_samples_split': [2,5,10]}
-	grid_search = GridSearchCV(estimator = RandomForestRegressor(max_features = "auto", criterion = "mse", random_state = 42, warm_start=True), param_grid=grid, cv=5, iid=False, scoring='neg_mean_squared_error')
+	grid_search = GridSearchCV(estimator = RandomForestRegressor(n_estimators=10, max_features = "auto", criterion = "mse", random_state = 42, warm_start=True), param_grid=grid, cv=5, iid=False, scoring='neg_mean_squared_error')
 	grid_search.fit(X_non_subject, y_non_subject)
 
 	pretrained_model = grid_search.best_estimator_
@@ -103,13 +104,13 @@ def evaluate(model_id, X_non_subject, y_non_subject, X_subject, y_subject, seed=
 	index_200 = np.random.randint(0,index_cap,200)
 
 	all_index = [index_10,index_20,index_50,index_100,index_200]
-	for i in all_index:
+	for i, indices in enumerate(all_index):
 		model = pretrained_model
-		model.n_estimators = model.n_estimators + 1
-		length = len(i)
+		model.n_estimators = model.n_estimators + 5
+		length = len(indices)
 		print("Fitting model parameters on subject data using", length, "rows")
 		t0 = time.time()
-		model.fit(X_subject_train[i], y_subject_train[i])
+		model.fit(X_subject_train[indices], y_subject_train[indices])
 		print("done in %0.3fs" % (time.time() - t0))
 
 		print("\nEvaluating best estimator on test set")
@@ -119,6 +120,8 @@ def evaluate(model_id, X_non_subject, y_non_subject, X_subject, y_subject, seed=
 			
 		score = round(mean_absolute_error(y_pred, y_subject_test), 4)
 		print('\n\t\tMAE (test):', score)
+
+		scores[i].append(score)
 
 	return y_pred
 
@@ -141,8 +144,15 @@ def evaluate(model_id, X_non_subject, y_non_subject, X_subject, y_subject, seed=
 
 #     plt.savefig(f"plot_{label_str}.png")
 
+scores_10 = []
+scores_20 = []
+scores_50 = []
+scores_100 = []
+scores_200 = []
 
-scores = []
+scores = [scores_10, scores_20, scores_50, scores_100, scores_200]
+experiment_strings = ["10", "20", "50", "100", "200"]
+
 test_files = [] #corresponding order with scores
 
 for test_file in glob.iglob(data_dir + '/*.csv'):
@@ -163,8 +173,18 @@ for test_file in glob.iglob(data_dir + '/*.csv'):
 			print(f"Added {filepath} to non-subject training set")
 	y_pred = evaluate(id, X_non_subject, y_non_subject, X_subject, y_subject, 42)
 
+# for score_list, experiment in zip(scores, experiment_strings):
+# 	print(f"Experiment: trained with {experiment} rows of data")
+# 	for test_file, score in zip(test_files, score_list):
+# 		print(f"MAE {score} for held-out test subject {test_file}")
 
-for test_file, score in zip(test_files, scores):
-	print(f"MAE {score} for held-out test subject {test_file}")
+# get current time for csv name
+now = datetime.now()
+current_time = now.strftime("%H:%M:%S")
+
+results_df = pd.DataFrame(scores)
+
+results_df.to_csv(f"RF_pretrain_{current_time}.csv")
+
 
  # average through all files

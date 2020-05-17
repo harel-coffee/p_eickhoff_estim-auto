@@ -76,18 +76,43 @@ def evaluate(model_id, X, y, scale=False, seed=42):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)
     
     index_cap = len(y_train)
-    index_10 = np.random.randint(0,index_cap,10)
-    index_20 = np.random.randint(0,index_cap,20)
-    index_50 = np.random.randint(0,index_cap,50)
-    index_100 = np.random.randint(0,index_cap,100)
-    index_200 = np.random.randint(0,index_cap,200)
-    index_1000 = np.random.randint(0,index_cap,1000)
-    index_2000 = np.random.randint(0,index_cap,2000)
-    # index_5000 = np.random.randint(0,index_cap,5000)
+    # print("cap:" + str(index_cap))
+    
+    index_10 = random.sample(range(index_cap),10)
+    # if len(index_10) != len(set(index_10)):
+    #     print("Duplicates 10")
+    #     print(index_10)
+    index_20 = random.sample(range(index_cap),20)
+    # if len(index_20) != len(set(index_20)):
+    #     print("Duplicates 20")
+    #     print(index_20)
+    index_50 = random.sample(range(index_cap),50)
+    # if len(index_50) != len(set(index_50)):
+    #     print("Duplicates 50")
+    #     print(index_50)
+    index_100 = random.sample(range(index_cap),100)
+    # if len(index_100) != len(set(index_100)):
+    #     print("Duplicates 100")
+    #     print(index_100)
+    index_200 = random.sample(range(index_cap),200)
+    if (index_cap) > 500:
+        index_500 = random.sample(range(index_cap),500)
+    else:
+      index_500 = random.sample(range(index_cap),index_cap)
+    if (index_cap) > 1000:
+        index_1000 = random.sample(range(index_cap),1000)
+    else:
+      index_1000 = random.sample(range(index_cap),index_cap)
+    if (index_cap) > 2000:
+        index_2000 = random.sample(range(index_cap),2000)
+    else:
+      index_2000 = random.sample(range(index_cap),index_cap)
+
+
     
     #all_index = [index_10,index_20,index_50,index_100,index_200,index_1000, index_2000, index_5000]
-    all_index = [index_10,index_20,index_50,index_100,index_200,index_1000, index_2000]
-    interation_scores = []
+    all_index = [index_10,index_20,index_50,index_100,index_200,index_500,index_1000,index_2000]
+    iteration_scores = []
         
     for i in all_index:
         length = len(i)
@@ -110,8 +135,8 @@ def evaluate(model_id, X, y, scale=False, seed=42):
     
         score = round(mean_absolute_error(y_test, y_pred), 4)
         #print('\n\t\tMAE (test):', score)
-        interation_scores.append(score)
-    print(interation_scores)
+        iteration_scores.append(score)
+    print(iteration_scores)
     
 
 

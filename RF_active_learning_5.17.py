@@ -23,12 +23,16 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 
 import matplotlib.pyplot as plt
 from modAL.models import ActiveLearner
-from modAL.uncertainty import entropy_sampling
-from modAL.uncertainty import uncertainty_sampling
-
+# from modAL.uncertainty import entropy_sampling
+# from modAL.uncertainty import uncertainty_sampling
+from modAL.disagreement import max_std_sampling
+from modAL.acquisition import max_PI
 
 import warnings
 warnings.filterwarnings("ignore" )
+
+# Number of rows for inital active learner training
+num_init_rows = 5
 
 # Directory with CSV files
 data_dir = "data"
@@ -73,6 +77,16 @@ def data(filename, scale):
         X = preprocessing.scale(X)
     return X, y
 
+### RF Query Strategy
+
+def RF_std_query(active_learer, X):
+    RF = active_learer.estimator
+    per_tree_pred = np.array([tree.predict(X) for tree in RF.estimators_])
+    std_arr = np.std(per_tree_pred, axis=0) # std of predictions over all trees 
+    query_idx = np.argmax(std_arr)
+    return query_idx, X[query_idx]
+
+
 ### Evaluate model
 def evaluate(model_id, X, y, scale=False, seed=42):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)
@@ -89,62 +103,40 @@ def evaluate(model_id, X, y, scale=False, seed=42):
 
     query_experiments.append(index_cap)
 
-    # choose 5 random 
+    # choose a small amount of random rows for initial training (e.g. 5)
+    init_indices = np.random.choice(index_cap, num_init_rows, replace=False)
+    print(init_indices)
+    init_X = X_train[init_indices]
+    init_y = y_train[init_indices]
+
+    # remove the initial rows from our train data
+    X_train = np.delete(X_train, init_indices, axis=0)
+    y_train = np.delete(y_train, init_indices, axis=0).reshape(-1, 1)
+    print(f"ytrain shape:{y_train.shape}")
+
+    iteration_scores = []
+
 
     for n_queries in query_experiments:
+        n_queries = n_queries - num_init_rows
+
         t0 = time.time()
 
-        learner = ActiveLearner(estimator=RandomForestRegressor(max_features="auto", criterion="mse", n_estimators=100, random_state=42), query_strategy=uncertainty_sampling, X_training=X_train, y_training=y_train)
-        
-        
+        learner = ActiveLearner(estimator=RandomForestRegressor(max_features="auto", criterion="mse",
+         n_estimators=100, random_state=42), query_strategy=RF_std_query, X_training=init_X, y_training=init_y)
+
         for idx in range(n_queries):
             query_idx, query_instance = learner.query(X)
-            
-            learner.teach(X[query_idx].reshape(1, -1), y[query_idx].reshape(1, -1))
-
+            learner.teach(X[query_idx].reshape(1, -1), y[query_idx].reshape(1, 1))
 
         y_pred = learner.predict(X_test)
         #print("done in %0.3fs" % (time.time() - t0))
 
         score = round(mean_absolute_error(y_test, y_pred), 4)
-        #print('\n\t\tMAE (test):', score)
+        print('\n\t\tMAE (test):', score)
         iteration_scores.append(score)
 
 
-
-    
-
-    iteration_scores = []
-
-
-        
-    for i in all_index:
-        length = len(i)
-        #print("Fitting model parameters on training set using", length, "rows of training set" )
-        #grid = {'n_estimators': (10, 50, 100, 1000),'min_samples_split': [2,5,10]}
-        #clf = GridSearchCV(estimator = RandomForestRegressor(max_features = "auto", criterion = "mse", random_state = 42), param_grid=grid, cv=5, iid=False, scoring='neg_mean_squared_error')
-        clf = ActiveLearner(estimator= RandomForestRegressor(max_features = "auto", criterion = "mse", random_state = 42), query_strategy=uncertainty_sampling, X_training = X_train[i], y_training=y_train[i])
-
-        n_queries = 10
-        for idx in range(n_queries):
-            query_idx, query_instance = clf.query(X)
-            clf.teach(X[query_idx].reshape(1, -1), y[query_idx].reshape(1, -1))
-
-        #clf.fit(X_train[i], y_train[i])
-        #print("done in %0.3fs" % (time.time() - t0))
-        #print("\nBest estimator found by grid search:")
-        #print('\t'+str(clf.best_estimator_))
-    
-        #print("\nEvaluating best estimator on test set")
-        # t0 = time.time()
-        y_pred = clf.predict(X_test)
-        #print("done in %0.3fs" % (time.time() - t0))
-    
-        score = round(mean_absolute_error(y_test, y_pred), 4)
-        #print('\n\t\tMAE (test):', score)
-        iteration_scores.append(score)
-    print(iteration_scores)
-    
 
 
     #Plot predicted vs. true twitch force per phase width

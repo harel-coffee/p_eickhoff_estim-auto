@@ -5,6 +5,7 @@ import pandas as pd
 import sklearn
 from sklearn import preprocessing
 import glob
+from collections import defaultdict
 
 # Model Imports
 from sklearn.neural_network import MLPRegressor
@@ -146,8 +147,8 @@ for filepath in glob.iglob(data_dir + '/*.csv'):
     # always run an experiment with all data
     experiments.append(index_cap)
 
-    # results dictionary with "number of training rows" as keys
-    results = dict.fromkeys(experiments, [])
+    # results dictionary, with each key referring to a list of scores for that experiment
+    results = defaultdict(list)
 
     # RUN TRIALS
     for trial in range(1, num_trials + 1):

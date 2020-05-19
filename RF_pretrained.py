@@ -18,7 +18,6 @@ from sklearn.feature_selection import chi2
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import ConstantKernel, RBF, RationalQuadratic, ExpSineSquared
 
-
 #Evaluation Imports
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split, GridSearchCV
@@ -97,11 +96,11 @@ def evaluate(model_id, X_non_subject, y_non_subject, X_subject, y_subject, seed=
 
 
 	index_cap = len(X_subject_train)
-	index_10 = np.random.randint(0,index_cap,10)
-	index_20 = np.random.randint(0,index_cap,20)
-	index_50 = np.random.randint(0,index_cap,50)
-	index_100 = np.random.randint(0,index_cap,100)
-	index_200 = np.random.randint(0,index_cap,200)
+	index_10 = np.random.sample(0,index_cap,10)
+	index_20 = np.random.sample(0,index_cap,20)
+	index_50 = np.random.sample(0,index_cap,50)
+	index_100 = np.random.sample(0,index_cap,100)
+	index_200 = np.random.sample(0,index_cap,200)
 
 	all_index = [index_10,index_20,index_50,index_100,index_200]
 	for i, indices in enumerate(all_index):

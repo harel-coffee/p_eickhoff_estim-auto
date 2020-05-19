@@ -1,13 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 28 23:05:11 2020
-
-@author: mk3mo
-"""
-
-#!/usr/bin/env python
-# coding:
-###
 # General Imports
 import math, csv, random, time
 import numpy as np
@@ -25,18 +15,24 @@ from sklearn.feature_selection import chi2
 #Evaluation Imports
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split, GridSearchCV
-
 import matplotlib.pyplot as plt
+
+# Active Learning Imports
 from modAL.models import ActiveLearner
-from modAL.uncertainty import entropy_sampling
-from modAL.uncertainty import uncertainty_sampling
 
+#### USER PARAMETERS: ####
+# Number of trials to run
+num_trials = 20
 
-import warnings
-warnings.filterwarnings("ignore" )
+# Number of rows for inital active learner training
+num_init_rows = 5
 
 # Directory with CSV files
 data_dir = "data"
+
+# Test ratio (for train-test split)
+test_ratio = 0.2
+#########################
 
 ### Load data from csv file
 def loadCsv(filename):
@@ -78,78 +74,91 @@ def data(filename, scale):
         X = preprocessing.scale(X)
     return X, y
 
-def RFR(regressor,X):
-    _, std = regressor.predict(X,return_std=True)
-    query_idx = np.argmax(std)
+### RF Query Strategy (max standard deviation over tree predictions)
+def RF_std_query(active_learer, X):
+    RF = active_learer.estimator
+    per_tree_pred = np.array([tree.predict(X) for tree in RF.estimators_])
+    std_arr = np.std(per_tree_pred, axis=0) # std of predictions over all trees 
+    query_idx = np.argmax(std_arr)
     return query_idx, X[query_idx]
-    _
+
 ### Evaluate model
 def evaluate(model_id, X, y, scale=False, seed=42):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)
-    
-    index_cap = len(y_train)
-    index_10 = np.random.randint(0,index_cap,10)
-    index_20 = np.random.randint(0,index_cap,20)
-    index_50 = np.random.randint(0,index_cap,50)
-    index_100 = np.random.randint(0,index_cap,100)
-    index_200 = np.random.randint(0,index_cap,200)
-    index_1000 = np.random.randint(0,index_cap,1000)
-    index_2000 = np.random.randint(0,index_cap,2000)
-    #index_5000 = np.random.randint(0,index_cap,5000)
-    
-    #all_index = [index_10,index_20,index_50,index_100,index_200,index_1000,index_2000, index_5000]
-    all_index = [index_10,index_20,index_50,index_100,index_200,index_1000,index_2000]
-    interation_scores = []
-        
-    for i in all_index:
-        length = len(i)
-        #print("Fitting model parameters on training set using", length, "rows of training set" )
-        t0 = time.time()
-        #grid = {'n_estimators': (10, 50, 100, 1000),'min_samples_split': [2,5,10]}
-        #clf = GridSearchCV(estimator = RandomForestRegressor(max_features = "auto", criterion = "mse", random_state = 42), param_grid=grid, cv=5, iid=False, scoring='neg_mean_squared_error')
-        n_initial = 10
-        clf = ActiveLearner(estimator= RandomForestRegressor(max_features = "auto", criterion = "mse", random_state = 42), query_strategy=uncertainty_sampling, X_training = X_train[i], y_training=y_train[i])
-        clf.teach(X_train[i],y_train[i])
-        #clf.fit(X_train[i], y_train[i])
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_ratio, random_state=seed)
+
+    # choose a small amount of random rows for initial training (e.g. 5)
+    init_indices = np.random.choice(index_cap, num_init_rows, replace=False)
+    print(f"Indices of intial train data: {init_indices}")
+    init_X = X_train[init_indices]
+    init_y = y_train[init_indices]
+
+    # remove the initial rows from our train data
+    X_train = np.delete(X_train, init_indices, axis=0)
+    y_train = np.delete(y_train, init_indices, axis=0)
+
+    for num_train in experiments:
+        num_queries = num_train - num_init_rows
+
+        #t0 = time.time()
+        learner = ActiveLearner(estimator=RandomForestRegressor(max_features="auto", criterion="mse",
+         n_estimators=100, random_state=42), query_strategy=RF_std_query, X_training=init_X, y_training=init_y)
+
+        for _ in range(num_queries):
+            query_idx, query_instance = learner.query(X_train)
+            learner.teach(X_train[query_idx].reshape(1, -1), np.array([y_train[query_idx]]))
+
+        y_pred = learner.predict(X_test)
         #print("done in %0.3fs" % (time.time() - t0))
-        #print("\nBest estimator found by grid search:")
-        #print('\t'+str(clf.best_estimator_))
-    
-        #print("\nEvaluating best estimator on test set")
-        # t0 = time.time()
-        y_pred = clf.predict(X_test)
-        #print("done in %0.3fs" % (time.time() - t0))
-    
+
         score = round(mean_absolute_error(y_test, y_pred), 4)
-        #print('\n\t\tMAE (test):', score)
-        interation_scores.append(score)
-    print(interation_scores)
-    
+        
+        # add score for this trial to results dictionary in correct experiment row
+        results[num_train].append(score)
 
+        print(f"MAE (test) with {num_train} rows: {score}")
 
-    #Plot predicted vs. true twitch force per phase width
-#    widths = np.unique(X_test[:,1])
-#    plt.figure(figsize=(10, 15))
-#    plt.suptitle('Amplitude vs. Twitch Force (blue = true, red = predicted)')
-#    for w in range(len(widths)):
-#        p = plt.subplot(math.ceil(len(widths)/2), 2, w+1)
-#        axes = plt.gca()
-#        axes.set_ylim(0, 1.1)
-#        for i in range (len(y_test)):
-#            if X_test[i,1] == widths[w]:
-#                plt.plot([X_test[i,0], X_test[i,0]], [y_pred[i], y_test[i]], color='black', linestyle='dashed', zorder=1)
-#                plt.scatter(X_test[i,0], y_test[i], marker='o', color='blue', zorder=2)
-#                plt.scatter(X_test[i,0], y_pred[i], marker='X', color='red', zorder=2)
-#        p.title.set_text('(phase width = '+str(widths[w])+')')
-#    plt.subplots_adjust(hspace=.8)
-#    plt.savefig("plots.png")
+def to_num(label):
+    # remove all non-numeric characters
+    label_str = ""
+    for char in label:
+        if char.isdigit():
+            label_str += char
+    return label_str
 
-# ### Methods to run:
+### Main Loop (Over Files)###
+print(f"Active Learning with Random Forest Regressor.")
+print(f"Model trained with {num_init_rows} rows before querying starts.")
 
 for filepath in glob.iglob(data_dir + '/*.csv'):
     X, y = data(filepath, True)
-    print("Evaluating:" + filepath)
-    for iteration in range(0, 20):
-    	# print("Iteration:", iteration)
-    	evaluate(id, X, y, True, 42)    
- # average through all files
+    
+    index_cap = int(len(X) * (1 - test_ratio))
+
+    # num of training rows
+    experiments = [10, 20, 50, 100, 200] 
+    
+    # add experiments for {500, 1000} if there are enough rows 
+    if index_cap > 500:
+        experiments.append(500)
+    if index_cap > 1000:
+        experiments.append(1000)
+
+    # always run an experiment with all data
+    experiments.append(index_cap)
+
+    # results dictionary with "number of training rows" as keys
+    results = dict.fromkeys(experiments, [])
+
+    # RUN TRIALS
+    for trial in range(1, num_trials + 1):
+        print(f"FILE {filepath}. TRIAL {trial}/{num_trials}.")
+        evaluate(id, X, y, True, 42)
+
+    # convert to DataFrame for csv saving
+    results_df = pd.DataFrame.from_dict(results, orient="index")
+
+    results_df.to_csv(f"RF_ActiveLearn_{to_num(filepath)}.csv")
+
+
+
+    

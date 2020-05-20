@@ -22,6 +22,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split, GridSearchCV
 
 import matplotlib.pyplot as plt
+from modAL.batch import uncertainty_batch_sampling
 
 
 #### USER PARAMETERS: ####
@@ -77,15 +78,26 @@ def data(filename, scale):
         X = preprocessing.scale(X)
     return X, y
 
-# def MLP_std_query(regressor, X):
-#     MLP = regressor.estimator
-#     per_layer_weight = np.array([i for i in MLP.coefs_])
-#     w_arr = np.std(per_layer_weight, axis=0)
-#     query_idx = np.argmax(w_arr)
-#     return query_idx, X[query_idx]
-
+def MLP_std_query(regressor, X):
+    MLP = regressor.estimator
+    mlp_pred = np.array([MLP.predict(X)])
+    std_arr = np.std(mlp_pred)
+    # print(std_arr)
+    query_idx = np.argmax(std_arr, axis=0)
+    # print(query_idx)
+    return query_idx, X[query_idx]
+# def random_sampling(classifier, X_pool):
+#     n_samples = len(X_pool)
+#     query_idx = np.random.choice(range(n_samples))
+#     return query_idx, X_pool[query_idx]
 
 ### Evaluate model
+
+def random_sampling(classifier, X_pool, n_instances=1, **uncertainty_measure_kwargs):
+    n_samples = X_pool.shape[0]
+    query_idx = np.random.choice(range(n_samples), size=n_instances)
+    return query_idx, X_pool[query_idx]
+
 def evaluate(model_id, X, y, scale=False, seed=42):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)
     
@@ -103,9 +115,9 @@ def evaluate(model_id, X, y, scale=False, seed=42):
     
     for num_train in experiments:
         num_queries = num_train - num_init_rows
-
+        print(num_queries)
         t0 = time.time()
-        learner = ActiveLearner(estimator=MLPRegressor(max_iter = 1000, solver = 'adam' , random_state=seed), query_strategy=uncertainty, X_training=init_X, y_training=init_y)
+        learner = ActiveLearner(estimator=MLPRegressor(max_iter = 1000, solver = 'adam' , random_state=seed), query_strategy=MLP_std_query, X_training=init_X, y_training=init_y)
 
         for _ in range(num_queries):
             query_idx, query_instance = learner.query(X_train)

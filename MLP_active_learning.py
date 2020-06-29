@@ -116,14 +116,19 @@ def evaluate(model_id, X, y, scale=False, seed=42):
 
     
     for num_train in experiments:
+        X_pool = X_train
+        y_pool = y_train
         num_queries = num_train - num_init_rows
         print(num_queries)
         t0 = time.time()
         learner = ActiveLearner(estimator=MLPRegressor(max_iter = 1000, solver = 'adam' , random_state=seed), query_strategy=random_sampling, X_training=init_X, y_training=init_y)
 
         for _ in range(num_queries):
-            query_idx, query_instance = learner.query(X_train)
-            learner.teach(X_train[query_idx].reshape(1, -1), np.array([y_train[query_idx]]))
+            query_idx, query_instance = learner.query(X_pool)
+            print(query_idx)
+            learner.teach(X_pool[query_idx].reshape(1, -1), np.array([y_pool[query_idx]]))
+            X_pool = np.delete(X_pool, query_idx, axis=0)
+            y_pool = np.delete(y_pool, query_idx, axis=0)
 
         y_pred = learner.predict(X_test)
         print("done in %0.3fs" % (time.time() - t0))
